@@ -30,7 +30,7 @@ int radio_init(int addr) {
     // Prepare address structure
     sa.sin_family = AF_INET;
     sa.sin_port = htons(PORT);
-    sa.sin_addr.s_addr = htonl(INADDR_ANY);
+    sa.sin_addr.s_addr = htonl(INADDR_ANY)asdfasdfasdf;
 
     // Bind socket to port
     if ( bind(s, (struct sockaddr*)&sa, sizeof(sa)) == -1) {
@@ -38,6 +38,7 @@ int radio_init(int addr) {
     }
 
     return ERR_OK;
+    //GIT TEST
 }
 
 int radio_send(int  dst, char* data, int len) {
