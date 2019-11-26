@@ -8,13 +8,13 @@
 #include "radio.h"
 
 // Uses
+#include <poll.h>
 #include <sys/socket.h>
 #include <arpa/inet.h>
 #include <stdio.h>
 #include <string.h>
-#define BUFLEN 1024
 int sock;    // UDP Socket used by this node
-char buffer[BUFLEN];
+char buffer[FRAME_PAYLOAD_SIZE];
 
 
 
@@ -70,10 +70,10 @@ int radio_send(int dst, char* data, int len) {
        	return ERR_FAILED;
     }
 
-    memset(buffer,'\0', BUFLEN);
+    memset(buffer, 0, FRAME_PAYLOAD_SIZE);
 
     // Check if fully sent
-    if ( recvfrom(sock, (char *)buffer , BUFLEN , 0 , (struct sockaddr *) &sa, &slen) < -1){
+    if ( recvfrom(sock, (char *)buffer , FRAME_PAYLOAD_SIZE, 0 , (struct sockaddr *) &sa, &slen) < -1){
       	return ERR_FAILED;
     }
 
@@ -83,25 +83,29 @@ int radio_send(int dst, char* data, int len) {
 int radio_recv(int* src, char* data, int to_ms) {
 
     struct sockaddr_in sa;   // Structure to receive source address
+    struct pollfd fds[1];
 
     int len,adrlen=sizeof(sa);            // Size of received packet (or error code)
 
-    // First poll/select with timeout (may be skipped at first)
+    memset(fds, 0, sizeof(fds));
 
+    fds[0].fd = sock;
+    fds[0].events = POLLIN;
 
+    if (poll(fds, 1, to_ms) == 0) {
+    	return ERR_TIMEOUT;
+    }
     // Receive packet/data
-
     if ((len = recvfrom(sock, data , FRAME_PAYLOAD_SIZE , 0, (struct sockaddr *) &sa, &adrlen)) == -1) {
     	return ERR_FAILED;
     }
 
 
-    if ( sendto(sock, data, sizeof(data) , 0, (struct sockaddr *) &sa, adrlen) < 0){
+    if ( sendto(sock, data, sizeof(data) , MSG_CONFIRM, (struct sockaddr *) &sa, adrlen) < 0){
     	return ERR_FAILED;
     }
 
     // Set source from address structure
-
 
     *src = ntohs(sa.sin_port);
 
