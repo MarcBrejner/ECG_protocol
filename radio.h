@@ -9,7 +9,7 @@
 
 #include "errors.h"
 
-#define FRAME_PAYLOAD_SIZE     72
+#define FRAME_PAYLOAD_SIZE 72
 
 int radio_init(int addr);
 

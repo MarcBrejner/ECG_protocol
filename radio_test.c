@@ -1,5 +1,5 @@
 /*
-jk * radio_test.c
+ * radio_test.c
  *
  * Test of simple radio device interface 
  * Parameters:

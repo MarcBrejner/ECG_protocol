@@ -50,7 +50,7 @@ int radio_send(int dst, char* data, int len) {
 
 	struct sockaddr_in sa;   // Structure to hold destination address
 
-	socklen_t slen;
+	int slen;
 
     // Check that port and len are valid
     if (dst < 0 || dst > 65535 || len < 0 || len > 255) {
@@ -58,11 +58,11 @@ int radio_send(int dst, char* data, int len) {
     }
 
     // Emulate transmission time
-    //sleep((len*8)/19200);
+    sleep((len*8)/19200);
 
     // Prepare address structure
 	sa.sin_family = AF_INET;
-    sa.sin_port = dst;
+    sa.sin_port = htons(dst);
     sa.sin_addr.s_addr = htonl(INADDR_ANY);
 
     // Send the message
@@ -91,14 +91,14 @@ int radio_recv(int* src, char* data, int to_ms) {
 
     // Receive packet/data
 
-    if ((len = recvfrom(sock, data , sizeof(data) , 0, (struct sockaddr *) &sa, &adrlen)) == -1) {
+    if ((len = recvfrom(sock, data , FRAME_PAYLOAD_SIZE , 0, (struct sockaddr *) &sa, &adrlen)) == -1) {
     	return ERR_FAILED;
     }
 
 
-    /*if ( sendto(sock, (char *)buffer, BUFLEN, 0, (struct sockaddr *) &sa, adrlen) < 0){
+    if ( sendto(sock, data, sizeof(data) , 0, (struct sockaddr *) &sa, adrlen) < 0){
     	return ERR_FAILED;
-    }*/
+    }
 
     // Set source from address structure
 
