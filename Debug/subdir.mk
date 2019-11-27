@@ -5,18 +5,21 @@
 # Add inputs and outputs from these tool invocations to the build variables 
 C_SRCS += \
 ../alarm.c \
-../radio.c \
-../radio_test.c 
+../ecg.c \
+../ecg_test.c \
+../radio.c 
 
 OBJS += \
 ./alarm.o \
-./radio.o \
-./radio_test.o 
+./ecg.o \
+./ecg_test.o \
+./radio.o 
 
 C_DEPS += \
 ./alarm.d \
-./radio.d \
-./radio_test.d 
+./ecg.d \
+./ecg_test.d \
+./radio.d 
 
 
 # Each subdirectory must supply rules for building sources it contributes
