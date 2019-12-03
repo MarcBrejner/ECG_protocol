@@ -1,5 +1,6 @@
 #include "ecg.h"
 #include "radio.h"
+#include "alarm.h"
 
 #include <sys/socket.h>
 #include <arpa/inet.h>
@@ -54,13 +55,20 @@ int ecg_send(int  dst, char* packet, int len, int to_ms) {
 	*/
 	buf.data.type.tag = DATA;
 	strcpy(buf.data.str, packet);
-	if ((err = radio_send(dst, packet, len)) != ERR_OK) {
+	printf("messg: %d\n", buf.data.str);
+	printf("pck: %d\n", packet);
+	printf("messgSTR: %d\n", *buf.data.str);
+	printf("pckSTR: %d\n", *packet);
+	if ((err = radio_send(dst, buf.raw, len)) != ERR_OK) {
 		printf("radio_send failed with: %d\n", err);
 	}
 
 	if ((errs = radio_recv(&src, buf.raw, to_ms)) >= ERR_OK){
-		printf("ACK\n");
+		if (buf.ack.type.tag == ACK) {
+			printf("ACK\n");
+		}
 	}
+	packet = buf.raw;
 	/*
 	while(!done) {
 		while(1) {
@@ -90,11 +98,13 @@ int ecg_recv(int* src, char* packet, int len, int to_ms) {
 	int err, errs;
 	pdu_frame_t buf;
 
-	err = radio_recv(src, packet, to_ms);
-
+	err = radio_recv(src, buf.raw, to_ms);
+	if (buf.data.type.tag == DATA) {
+		printf("DATA RECEIVED\n");
+	}
 	buf.ack.type.tag = ACK;
 
-	if ((errs = radio_send(*src, packet, sizeof(buf))) != ERR_OK) {
+	if ((errs = radio_send(*src, buf.raw, sizeof(buf))) != ERR_OK) {
 		printf("Our radio_send failed with: %d\n", err);
 	}
 
