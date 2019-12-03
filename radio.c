@@ -53,7 +53,7 @@ int radio_send(int dst, char* data, int len) {
 	int slen;
 
     // Check that port and len are valid
-    if (dst < 0 || dst > 65535 || len < 0 || len > 255) {
+    if (dst < 0 || dst > 65535 || len < 0 || len > 1025) {
     	return ERR_INVAL;
     }
 
@@ -71,11 +71,12 @@ int radio_send(int dst, char* data, int len) {
     }
 
     memset(buffer, 0, FRAME_PAYLOAD_SIZE);
-
+    /*
     // Check if fully sent
     if ( recvfrom(sock, (char *)buffer , FRAME_PAYLOAD_SIZE, 0 , (struct sockaddr *) &sa, &slen) < -1){
       	return ERR_FAILED;
     }
+    */
 
     return ERR_OK;
 }
@@ -97,11 +98,6 @@ int radio_recv(int* src, char* data, int to_ms) {
     }
     // Receive packet/data
     if ((len = recvfrom(sock, data , FRAME_PAYLOAD_SIZE , 0, (struct sockaddr *) &sa, &adrlen)) == -1) {
-    	return ERR_FAILED;
-    }
-
-
-    if ( sendto(sock, data, sizeof(data) , MSG_CONFIRM, (struct sockaddr *) &sa, adrlen) < 0){
     	return ERR_FAILED;
     }
 
