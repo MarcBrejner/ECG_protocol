@@ -16,7 +16,7 @@ typedef struct {char tag; } tag_t;
 typedef struct {
 	tag_t type;
 	int seal;
-	char str[0];
+	char str[FRAME_PAYLOAD_SIZE];
 } data_pdu_t;
 
 typedef struct {
@@ -54,11 +54,7 @@ int ecg_send(int  dst, char* packet, int len, int to_ms) {
 	}
 	*/
 	buf.data.type.tag = DATA;
-	strcpy(buf.data.str, packet);
-	printf("messg: %d\n", buf.data.str);
-	printf("pck: %d\n", packet);
-	printf("messgSTR: %d\n", *buf.data.str);
-	printf("pckSTR: %d\n", *packet);
+	memcpy(buf.data.str, packet, len);
 	if ((err = radio_send(dst, buf.raw, len)) != ERR_OK) {
 		printf("radio_send failed with: %d\n", err);
 	}
@@ -97,16 +93,18 @@ int ecg_send(int  dst, char* packet, int len, int to_ms) {
 int ecg_recv(int* src, char* packet, int len, int to_ms) {
 	int err, errs;
 	pdu_frame_t buf;
-
-	err = radio_recv(src, buf.raw, to_ms);
+	err = radio_recv(src, buf.data.str, to_ms);
 	if (buf.data.type.tag == DATA) {
 		printf("DATA RECEIVED\n");
-	}
-	buf.ack.type.tag = ACK;
 
+	}
+	memcpy(packet, buf.data.str, len);
+	buf.ack.type.tag = ACK;
 	if ((errs = radio_send(*src, buf.raw, sizeof(buf))) != ERR_OK) {
 		printf("Our radio_send failed with: %d\n", err);
 	}
+
+
 
 	/*
 	while(1) {
