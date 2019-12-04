@@ -30,7 +30,9 @@ int radio_init(int addr) {
 
     // Create UDP socket
     if ((sock = socket(AF_INET, SOCK_DGRAM, IPPROTO_UDP)) == -1) {
+
     	return ERR_FAILED;
+
     }
 
     // Prepare address structure
@@ -107,4 +109,5 @@ int radio_recv(int* src, char* data, int to_ms) {
 
     return len;
 }
+
 
