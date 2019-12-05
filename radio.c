@@ -18,10 +18,9 @@ int sock;    // UDP Socket used by this node
 typedef struct {
 	char preamble[10];
 	char key[4];
-
 	char PI;
 	char checksum[2];
-	char str[PAYLOAD_SIZE];
+	char str[DATA_SIZE];
 }frame_header_t;
 
 typedef union {
@@ -68,7 +67,7 @@ int radio_send(int dst, char* data, int len) {
 	int slen;
 
     // Check that port and len are valid
-    if (dst < 0 || dst > 65535 || len < 0 || len > 1025) {
+    if (dst < 0 || dst > 65535 || len < 0 || len > DATA_SIZE) {
     	return ERR_INVAL;
     }
 
@@ -89,12 +88,12 @@ int radio_send(int dst, char* data, int len) {
     /*
     printf("Checksum[0]: %p\n", buf.head.checksum[0]);
     printf("Checksum[1]: %p\n", buf.head.checksum[1]);
-    */
+	*/
 
     //buf.head.checksum = checkSum(data);
 
     // Truncates data if bigger than payload size
-    memcpy(buf.head.str, data, PAYLOAD_SIZE);
+    memcpy(buf.head.str, data, DATA_SIZE);
 
     /*
     printf("Preamble[0]: %p\n", *buf.head.preamble);
@@ -162,21 +161,30 @@ int radio_recv(int* src, char* data, int to_ms) {
     if ((len = recvfrom(sock, buf.raw, FRAME_PAYLOAD_SIZE, 0, (struct sockaddr *) &sa, &adrlen)) == -1) {
     	return ERR_FAILED;
     }
-    receivedChecksum = buf.head.checksum[0];
-    receivedChecksum |= buf.head.checksum[1];
+
+
+    receivedChecksum = buf.head.checksum[1];
+    receivedChecksum = receivedChecksum << 8;
+    receivedChecksum |= buf.head.checksum[0];
     calculatedChecksum = checkSum(buf.head.str);
+
+    /*
+    printf("Received checksum[0]: %p\n", buf.head.checksum[0]);
+    printf("Received checksum[1]: %p\n", buf.head.checksum[1]);
+    printf("Received checksum combined: %p\n", receivedChecksum);
+    printf("Calculated checksum: %p\n", calculatedChecksum);
+    */
+
+
     if (calculatedChecksum != receivedChecksum) {
     	printf("Packet integrety lost\n");
     	return ERR_CORR;
     }
 
     //check if checksum works
-    /*
-    printf("Received checksum[0]: %p\n", buf.head.checksum[0]);
-    printf("Received checksum[1]: %p\n", buf.head.checksum[1]);
-    printf("Received checksum combined: %p\n", receivedChecksum);
-    printf("Calculated checksum: %p\n", calculatedChecksum);
-	*/
+
+
+
     // Set source from address structure
 
     /*
@@ -200,7 +208,7 @@ int radio_recv(int* src, char* data, int to_ms) {
     printf("First letter: %c\n", buf.head.str[0]);
     */
 
-    memcpy(data, buf.head.str, PAYLOAD_SIZE);
+    memcpy(data, buf.head.str, DATA_SIZE);
 
     *src = ntohs(sa.sin_port);
 
@@ -211,7 +219,7 @@ short checkSum (char * packet) {
 	short sum = 0;
 	char * s;
 	for (s = packet ; *s != 0; s++ ){ sum ^= *s; }
-	return (( short ) sum);
+	return ((short)sum);
 }
 
 

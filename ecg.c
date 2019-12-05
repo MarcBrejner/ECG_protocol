@@ -23,7 +23,7 @@ typedef struct {
 } ack_pdu_t;
 
 typedef union {
-	char raw[FRAME_PAYLOAD_SIZE];
+	char raw[DATA_SIZE];
 
 	tag_t pdu_type;
 	data_pdu_t data;
@@ -35,17 +35,21 @@ int ecg_init(int addr) {
 	return radio_init(addr);
 }
 
-
 int ecg_send(int  dst, char* packet, int len, int to_ms) {
 
 	pdu_frame_t buf;
 	int err, src, errs;
 
-	memset(buf.data.str, 0, FRAME_PAYLOAD_SIZE);
-	buf.data.type.tag = DATA;
-	strcpy(buf.data.str, packet);
+	if (len > DATA_SIZE -1) {
+		printf("ECG send invalid argument");
+		return ERR_INVAL;
+	}
 
-	if ((err = radio_send(dst, buf.raw, strlen(buf.data.str)+2)) != ERR_OK) {
+	memset(buf.data.str, 0, DATA_SIZE);
+	buf.data.type.tag = DATA;
+	memcpy(buf.data.str, packet, DATA_SIZE -1);
+
+	if ((err = radio_send(dst, buf.raw, DATA_SIZE)) != ERR_OK) {
 		printf("radio_send failed with: %d\n", err);
 	}
 
@@ -63,21 +67,23 @@ int ecg_recv(int* src, char* packet, int len, int to_ms) {
 	int err,errs;
 	pdu_frame_t buf;
 
-	memset(buf.raw, 0, FRAME_PAYLOAD_SIZE);
+	memset(buf.raw, 0, DATA_SIZE);
 
 	err = radio_recv(src, buf.raw, to_ms);
 
 	if (buf.data.type.tag == DATA) {
 
 		printf("DATA RECEIVED\n");
-		memcpy(packet, buf.data.str, PAYLOAD_SIZE);
+		memcpy(packet, buf.data.str, DATA_SIZE -1);
 
 		buf.ack.type.tag = ACK;
 
-		if ((errs = radio_send(*src, buf.raw, FRAME_PAYLOAD_SIZE)) != ERR_OK) {
+		if ((errs = radio_send(*src, buf.raw, DATA_SIZE)) != ERR_OK) {
 				printf("Our radio_send failed with: %d\n", errs);
 		}
 	}
+
+	err = strlen(buf.data.str);
 
 	return err;
 }
