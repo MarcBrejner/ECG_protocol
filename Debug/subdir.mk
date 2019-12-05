@@ -6,20 +6,20 @@
 C_SRCS += \
 ../alarm.c \
 ../ecg.c \
-../radio.c \
-../radio_test.c 
+../ecg_test.c \
+../radio.c 
 
 OBJS += \
 ./alarm.o \
 ./ecg.o \
-./radio.o \
-./radio_test.o 
+./ecg_test.o \
+./radio.o 
 
 C_DEPS += \
 ./alarm.d \
 ./ecg.d \
-./radio.d \
-./radio_test.d 
+./ecg_test.d \
+./radio.d 
 
 
 # Each subdirectory must supply rules for building sources it contributes

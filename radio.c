@@ -100,6 +100,11 @@ int radio_send(int dst, char* data, int len) {
     printf("Key[1]: %p\n", buf.head.key[1]);
     printf("Key[2]: %p\n", buf.head.key[2]);
     printf("Key[3]: %p\n", buf.head.key[3]);
+    printf("PI: %p\n", buf.head.PI);
+    printf("Checksum[0]: %p\n", buf.head.checksum[0]);
+    printf("Checksum[1]: %p\n", buf.head.checksum[1]);
+    printf("First letter: %c\n", buf.head.str[0]);
+
     printf("MSG: %s of length %d\n", buf.head.str, len);
 
 
@@ -149,6 +154,7 @@ int radio_recv(int* src, char* data, int to_ms) {
 
     // Set source from address structure
 
+
     printf("Preamble[0]: %p\n", *buf.head.preamble);
     printf("Preamble[1]: %p\n", buf.head.preamble[1]);
     printf("Preamble[2]: %p\n", buf.head.preamble[2]);
@@ -163,6 +169,11 @@ int radio_recv(int* src, char* data, int to_ms) {
     printf("Key[1]: %p\n", buf.head.key[1]);
     printf("Key[2]: %p\n", buf.head.key[2]);
     printf("Key[3]: %p\n", buf.head.key[3]);
+    printf("PI: %p\n", buf.head.PI);
+    printf("Checksum[0]: %p\n", buf.head.checksum[0]);
+    printf("Checksum[1]: %p\n", buf.head.checksum[1]);
+    printf("First letter: %c\n", buf.head.str[0]);
+
     printf("MSG: %s of length %d\n", buf.head.str, len-HEADER_SIZE);
     strcpy(data, buf.head.str);
 
