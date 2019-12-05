@@ -14,14 +14,13 @@
 #include <stdio.h>
 #include <string.h>
 int sock;    // UDP Socket used by this node
-char buffer[FRAME_PAYLOAD_SIZE];
 
 typedef struct {
-	char preamble[0];
-	char key[0];
+	char preamble[10];
+	char key[4];
 	char PI;
-	char str[0];
-	char checksum[0];
+	char checksum[2];
+	char str[PAYLOAD_SIZE];
 }frame_header_t;
 
 typedef union {
@@ -72,11 +71,36 @@ int radio_send(int dst, char* data, int len) {
     	return ERR_INVAL;
     }
 
+
+    memset(buf.head.str, 0, sizeof(char)*len);
     memset(buf.head.preamble, 170, sizeof(char)*10);
-    memset(buf.head.key, 200, sizeof(char)*4);
+    memset(buf.head.key, 199, sizeof(char)*4);
     buf.head.PI = 201;
-    memset(buf.head.str, 0, FRAME_PAYLOAD_SIZE+1);
-    strcpy(buf.head.str, data);
+    memset(buf.head.checksum, 10, sizeof(char)*2);
+
+    // Truncates data if bigger than payload size
+    if(len >= PAYLOAD_SIZE) {
+        strncpy(buf.head.str, data, PAYLOAD_SIZE-1);
+        data[PAYLOAD_SIZE] = '\0';
+    } else {
+        strcpy(buf.head.str, data);
+    }
+
+    printf("Preamble[0]: %p\n", *buf.head.preamble);
+    printf("Preamble[1]: %p\n", buf.head.preamble[1]);
+    printf("Preamble[2]: %p\n", buf.head.preamble[2]);
+    printf("Preamble[3]: %p\n", buf.head.preamble[3]);
+    printf("Preamble[4]: %p\n", buf.head.preamble[4]);
+    printf("Preamble[5]: %p\n", buf.head.preamble[5]);
+    printf("Preamble[6]: %p\n", buf.head.preamble[6]);
+    printf("Preamble[7]: %p\n", buf.head.preamble[7]);
+    printf("Preamble[8]: %p\n", buf.head.preamble[8]);
+    printf("Preamble[9]: %p\n", buf.head.preamble[9]);
+    printf("Key[0]: %p\n", buf.head.key[0]);
+    printf("Key[1]: %p\n", buf.head.key[1]);
+    printf("Key[2]: %p\n", buf.head.key[2]);
+    printf("Key[3]: %p\n", buf.head.key[3]);
+    printf("MSG: %s of length %d\n", buf.head.str, len);
 
 
     // Emulate transmission time
@@ -88,11 +112,9 @@ int radio_send(int dst, char* data, int len) {
     sa.sin_addr.s_addr = htonl(INADDR_ANY);
 
     // Send the message
-    if ( sendto(sock, buf.raw, len+1 , 0 , (struct sockaddr *) &sa, sizeof(sa)) < 0){
+    if ( sendto(sock, buf.raw, HEADER_SIZE + len, 0 , (struct sockaddr *) &sa, sizeof(sa)) < 0){
        	return ERR_FAILED;
     }
-
-    memset(buffer, 0, FRAME_PAYLOAD_SIZE);
     /*
     // Check if fully sent
     if ( recvfrom(sock, (char *)buffer , FRAME_PAYLOAD_SIZE, 0 , (struct sockaddr *) &sa, &slen) < -1){
@@ -111,6 +133,7 @@ int radio_recv(int* src, char* data, int to_ms) {
 
     int len,adrlen=sizeof(sa);            // Size of received packet (or error code)
 
+    memset(buf.raw, 0, FRAME_PAYLOAD_SIZE);
     memset(fds, 0, sizeof(fds));
 
     fds[0].fd = sock;
@@ -120,11 +143,28 @@ int radio_recv(int* src, char* data, int to_ms) {
     	return ERR_TIMEOUT;
     }
     // Receive packet/data
-    if ((len = recvfrom(sock, buf.raw , FRAME_PAYLOAD_SIZE , 0, (struct sockaddr *) &sa, &adrlen)) == -1) {
+    if ((len = recvfrom(sock, buf.raw , len+HEADER_SIZE , 0, (struct sockaddr *) &sa, &adrlen)) == -1) {
     	return ERR_FAILED;
     }
-    strcpy(data, buf.head.str);
+
     // Set source from address structure
+
+    printf("Preamble[0]: %p\n", *buf.head.preamble);
+    printf("Preamble[1]: %p\n", buf.head.preamble[1]);
+    printf("Preamble[2]: %p\n", buf.head.preamble[2]);
+    printf("Preamble[3]: %p\n", buf.head.preamble[3]);
+    printf("Preamble[4]: %p\n", buf.head.preamble[4]);
+    printf("Preamble[5]: %p\n", buf.head.preamble[5]);
+    printf("Preamble[6]: %p\n", buf.head.preamble[6]);
+    printf("Preamble[7]: %p\n", buf.head.preamble[7]);
+    printf("Preamble[8]: %p\n", buf.head.preamble[8]);
+    printf("Preamble[9]: %p\n", buf.head.preamble[9]);
+    printf("Key[0]: %p\n", buf.head.key[0]);
+    printf("Key[1]: %p\n", buf.head.key[1]);
+    printf("Key[2]: %p\n", buf.head.key[2]);
+    printf("Key[3]: %p\n", buf.head.key[3]);
+    printf("MSG: %s of length %d\n", buf.head.str, len-HEADER_SIZE);
+    strcpy(data, buf.head.str);
 
     *src = ntohs(sa.sin_port);
 

@@ -10,6 +10,8 @@
 #include "errors.h"
 
 #define FRAME_PAYLOAD_SIZE 72
+#define HEADER_SIZE 17
+#define PAYLOAD_SIZE FRAME_PAYLOAD_SIZE - HEADER_SIZE
 
 int radio_init(int addr);
 
