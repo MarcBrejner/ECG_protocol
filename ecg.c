@@ -37,6 +37,27 @@ int ecg_init(int addr) {
 
 int ecg_send(int  dst, char* packet, int len, int to_ms) {
 
+	char singlePacket[DATA_SIZE-1];
+	int err=0,counter=0;
+
+	while(len >= DATA_SIZE -1){
+		memcpy(singlePacket,packet+counter,DATA_SIZE - 1);
+		err += ecg_sendPacket(dst, singlePacket, DATA_SIZE - 1, to_ms);
+		counter += DATA_SIZE - 1;
+		len -= DATA_SIZE - 1;
+	}
+
+	printf("vismig: %d\n",len);
+	memset(singlePacket, 0, DATA_SIZE -1);
+	memcpy(singlePacket,packet+counter,len);
+	err += ecg_sendPacket(dst,singlePacket, len , to_ms);
+
+	return err;
+}
+
+
+int ecg_sendPacket(int  dst, char* packet, int len, int to_ms) {
+
 	pdu_frame_t buf;
 	int err, src, errs;
 

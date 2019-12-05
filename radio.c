@@ -168,10 +168,12 @@ int radio_recv(int* src, char* data, int to_ms) {
     receivedChecksum |= buf.head.checksum[0];
     calculatedChecksum = checkSum(buf.head.str);
 
+    //printf("Received checksum combined: %p\n", receivedChecksum);
+
     /*
     printf("Received checksum[0]: %p\n", buf.head.checksum[0]);
     printf("Received checksum[1]: %p\n", buf.head.checksum[1]);
-    printf("Received checksum combined: %p\n", receivedChecksum);
+
     printf("Calculated checksum: %p\n", calculatedChecksum);
     */
 
