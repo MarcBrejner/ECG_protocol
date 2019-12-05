@@ -70,7 +70,7 @@ int ecg_recv(int* src, char* packet, int len, int to_ms) {
 	if (buf.data.type.tag == DATA) {
 
 		printf("DATA RECEIVED\n");
-		memcpy(packet, buf.data.str, FRAME_PAYLOAD_SIZE);
+		memcpy(packet, buf.data.str, PAYLOAD_SIZE);
 
 		buf.ack.type.tag = ACK;
 

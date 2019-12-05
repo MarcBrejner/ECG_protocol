@@ -11,6 +11,7 @@
 #define ERR_FAILED       (-1)  // General failure 
 #define ERR_INVAL        (-2)  // Invalid arguments
 #define ERR_TIMEOUT      (-3)  // Timeout occured
+#define ERR_CORR		 (-4)  // Checksum not corresponding
 
 // May be extended.
 

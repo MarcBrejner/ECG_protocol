@@ -19,4 +19,6 @@ int radio_send(int  dst, char* data, int len);
 
 int radio_recv(int* src, char* data, int to_ms);
 
+short checkSum (char * packet);
+
 #endif // _RADIO_H_
