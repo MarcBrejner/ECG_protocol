@@ -41,12 +41,11 @@ int ecg_send(int  dst, char* packet, int len, int to_ms) {
 	pdu_frame_t buf;
 	int err, src, errs;
 
-	memset(buf.raw, 0, FRAME_PAYLOAD_SIZE);
+	memset(buf.data.str, 0, FRAME_PAYLOAD_SIZE);
 	buf.data.type.tag = DATA;
 	strcpy(buf.data.str, packet);
-	printf("packet len: %d\n", strlen(packet));
 
-	if ((err = radio_send(dst, buf.raw, strlen(packet))) != ERR_OK) {
+	if ((err = radio_send(dst, buf.raw, strlen(buf.data.str)+2)) != ERR_OK) {
 		printf("radio_send failed with: %d\n", err);
 	}
 
@@ -67,14 +66,15 @@ int ecg_recv(int* src, char* packet, int len, int to_ms) {
 	memset(buf.raw, 0, FRAME_PAYLOAD_SIZE);
 
 	err = radio_recv(src, buf.raw, to_ms);
+
 	if (buf.data.type.tag == DATA) {
 
 		printf("DATA RECEIVED\n");
-		strcpy(packet,buf.data.str);
+		memcpy(packet, buf.data.str, FRAME_PAYLOAD_SIZE);
 
 		buf.ack.type.tag = ACK;
 
-		if ((errs = radio_send(*src, buf.raw, strlen(packet))) != ERR_OK) {
+		if ((errs = radio_send(*src, buf.raw, FRAME_PAYLOAD_SIZE)) != ERR_OK) {
 				printf("Our radio_send failed with: %d\n", errs);
 		}
 	}

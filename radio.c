@@ -18,6 +18,7 @@ int sock;    // UDP Socket used by this node
 typedef struct {
 	char preamble[10];
 	char key[4];
+
 	char PI;
 	char checksum[2];
 	char str[PAYLOAD_SIZE];
@@ -80,12 +81,13 @@ int radio_send(int dst, char* data, int len) {
 
     // Truncates data if bigger than payload size
     if(len >= PAYLOAD_SIZE) {
-        strncpy(buf.head.str, data, PAYLOAD_SIZE-1);
+        memcpy(buf.head.str, data, PAYLOAD_SIZE-1);
         data[PAYLOAD_SIZE] = '\0';
     } else {
-        strcpy(buf.head.str, data);
+        memcpy(buf.head.str, data, PAYLOAD_SIZE);
     }
 
+    /*
     printf("Preamble[0]: %p\n", *buf.head.preamble);
     printf("Preamble[1]: %p\n", buf.head.preamble[1]);
     printf("Preamble[2]: %p\n", buf.head.preamble[2]);
@@ -104,9 +106,7 @@ int radio_send(int dst, char* data, int len) {
     printf("Checksum[0]: %p\n", buf.head.checksum[0]);
     printf("Checksum[1]: %p\n", buf.head.checksum[1]);
     printf("First letter: %c\n", buf.head.str[0]);
-
-    printf("MSG: %s of length %d\n", buf.head.str, len);
-
+	*/
 
     // Emulate transmission time
     //sleep((len*8)/19200);
@@ -136,7 +136,7 @@ int radio_recv(int* src, char* data, int to_ms) {
     struct pollfd fds[1];
     frame_packet_t buf;
 
-    int len,adrlen=sizeof(sa);            // Size of received packet (or error code)
+    int len,adrlen=sizeof(sa);            // Size of received packet (or error code);
 
     memset(buf.raw, 0, FRAME_PAYLOAD_SIZE);
     memset(fds, 0, sizeof(fds));
@@ -148,13 +148,13 @@ int radio_recv(int* src, char* data, int to_ms) {
     	return ERR_TIMEOUT;
     }
     // Receive packet/data
-    if ((len = recvfrom(sock, buf.raw , len+HEADER_SIZE , 0, (struct sockaddr *) &sa, &adrlen)) == -1) {
+    if ((len = recvfrom(sock, buf.raw, FRAME_PAYLOAD_SIZE, 0, (struct sockaddr *) &sa, &adrlen)) == -1) {
     	return ERR_FAILED;
     }
 
     // Set source from address structure
 
-
+    /*
     printf("Preamble[0]: %p\n", *buf.head.preamble);
     printf("Preamble[1]: %p\n", buf.head.preamble[1]);
     printf("Preamble[2]: %p\n", buf.head.preamble[2]);
@@ -173,9 +173,9 @@ int radio_recv(int* src, char* data, int to_ms) {
     printf("Checksum[0]: %p\n", buf.head.checksum[0]);
     printf("Checksum[1]: %p\n", buf.head.checksum[1]);
     printf("First letter: %c\n", buf.head.str[0]);
+    */
 
-    printf("MSG: %s of length %d\n", buf.head.str, len-HEADER_SIZE);
-    strcpy(data, buf.head.str);
+    memcpy(data, buf.head.str, FRAME_PAYLOAD_SIZE);
 
     *src = ntohs(sa.sin_port);
 
