@@ -38,27 +38,29 @@ int ecg_send(int  dst, char* packet, int len, int to_ms) {
 	int err=0,counter=0;
 	alarm_t timer1;
 
+	alarm_init(&timer1);
+
+	alarm_set(&timer1,to_ms);
 
 	//Clear singlePacket and send START
 	memset(singlePacket, 0, DATA_SIZE -1);
-	ecg_sendPacket(dst, singlePacket, 1, to_ms, START);
-
+	ecg_sendPacket(dst, singlePacket, 1, alarm_rem(&timer1) , START);
 
 	//While the remaining packets total length is bigger than the size of a single packet
 	while(len >= DATA_SIZE -1){
 		memcpy(singlePacket,packet+counter,DATA_SIZE - 1);
-		err += ecg_sendPacket(dst, singlePacket, DATA_SIZE - 1, to_ms, DATA);
+		err += ecg_sendPacket(dst, singlePacket, DATA_SIZE - 1, alarm_rem(&timer1), DATA);
 		counter += DATA_SIZE - 1;
 		len -= DATA_SIZE - 1;
 	}
 
 	memset(singlePacket, 0, DATA_SIZE -1);
 	memcpy(singlePacket,packet+counter,len);
-	err += ecg_sendPacket(dst,singlePacket, len , to_ms,DATA);
+	err += ecg_sendPacket(dst,singlePacket, len , alarm_rem(&timer1),DATA);
 
 	//send END
 	memset(singlePacket, 0, DATA_SIZE -1);
-	ecg_sendPacket(dst,singlePacket, 1,to_ms, END);
+	ecg_sendPacket(dst,singlePacket, 1, alarm_rem(&timer1), END);
 	return err;
 }
 
@@ -109,7 +111,7 @@ int ecg_sendPacket(int  dst, char* packet, int len, int to_ms, char tag) {
 		}
 
 		printf("Acknowledgement timed out\n");
-		return errs;
+		exit(0);
 
 	}
 	return err;
