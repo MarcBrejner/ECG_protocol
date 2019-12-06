@@ -15,6 +15,7 @@
 #include <string.h>
 int sock;    // UDP Socket used by this node
 
+// UPD frame
 typedef struct {
 	char preamble[10];
 	char key[4];
@@ -78,7 +79,7 @@ int radio_send(int dst, char* data, int len) {
     memset(buf.head.checksum, 0, sizeof(char)*2);
     buf.head.tag = data[0];
 
-    //memset(buf.head.checksum, 0, sizeof(char)*2);
+    // If sending a data pack, checksum is calculated and set in header
     if (buf.head.tag == CHECK) {
     	short p = checkSum(data+sizeof(char));
 
@@ -118,12 +119,15 @@ int radio_recv(int* src, char* data, int to_ms) {
 
     int len,adrlen=sizeof(sa);            // Size of received packet (or error code);
 
+    // Clean buffer and poll struct
     memset(buf.raw, 0, FRAME_PAYLOAD_SIZE);
     memset(fds, 0, sizeof(fds));
 
+    // Initialize poll struct
     fds[0].fd = sock;
     fds[0].events = POLLIN;
 
+    // Return timeout if timeframe is exceeded
     if (poll(fds, 1, to_ms) == 0) {
     	return ERR_TIMEOUT;
     }
@@ -134,12 +138,14 @@ int radio_recv(int* src, char* data, int to_ms) {
 
     receivedChecksum[0] = buf.head.checksum[0];
     receivedChecksum[1] = buf.head.checksum[1];
+
+    // Calculate checksum of received package
     short p = checkSum(buf.head.str);
     calculatedChecksum[0] = p;
     p = p>>8;
     calculatedChecksum[1] = p;
 
-
+    // Check for package integrity
     if(buf.head.tag == CHECK) {
     	if (calculatedChecksum[0] != receivedChecksum[0] || calculatedChecksum[1] != receivedChecksum[1]) {
     	    printf("Packet integrety lost\n");
@@ -147,6 +153,7 @@ int radio_recv(int* src, char* data, int to_ms) {
     	}
     }
 
+    // Save the received package in the correct memory location
     data[0] = buf.head.tag;
     memcpy(data+sizeof(char), buf.head.str, DATA_SIZE);
 
@@ -156,6 +163,7 @@ int radio_recv(int* src, char* data, int to_ms) {
     return len;
 }
 
+// Calculate checksum for a given package
 short checkSum (char * packet) {
 	short sum = 0;
 	char * s;

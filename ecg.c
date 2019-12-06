@@ -71,11 +71,6 @@ int ecg_sendPacket(int  dst, char* packet, int len, int to_ms, char tag) {
 	pdu_frame_t buf;
 	int err, src, errs;
 
-	if (len > DATA_SIZE -1) {
-		printf("ECG send invalid argument");
-		return ERR_INVAL;
-	}
-
 	memset(buf.data.str, 0, DATA_SIZE);
 	buf.data.type.tag = tag;
 	memcpy(buf.data.str, packet, DATA_SIZE -1);
@@ -155,7 +150,7 @@ int ecg_recv(int* src, char* packet, int len, int to_ms) {
 			receiving = 1;
 
 			if (recLen > MAX_SEND_SIZE) {
-				printf("Failed with packet size too large");
+				printf("Failed with packet size too large\n");
 				exit(0);
 			}
 
