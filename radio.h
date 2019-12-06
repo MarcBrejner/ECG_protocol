@@ -10,8 +10,7 @@
 #include "errors.h"
 
 // Tags
-#define DATA 0
-#define ACK 1
+#define CHECK 0
 
 #define FRAME_PAYLOAD_SIZE 72
 #define HEADER_SIZE 18

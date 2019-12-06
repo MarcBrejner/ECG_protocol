@@ -80,7 +80,7 @@ int radio_send(int dst, char* data, int len) {
     buf.head.tag = data[0];
 
     //memset(buf.head.checksum, 0, sizeof(char)*2);
-    if (buf.head.tag == DATA) {
+    if (buf.head.tag == CHECK) {
     	short p = checkSum(data+sizeof(char));
 
     	buf.head.checksum[0] = p;
@@ -89,42 +89,12 @@ int radio_send(int dst, char* data, int len) {
 
     }
 
-
-    //check this too when checking checksum
-    /*
-		printf("Checksum[0]: %p\n", buf.head.checksum[0]);
-    	printf("Checksum[1]: %p\n", buf.head.checksum[1]);
-	*/
-
-    //buf.head.checksum = checkSum(data);
-
-    // Truncates data if bigger than payload size
     memcpy(buf.head.str, data+sizeof(char), DATA_SIZE);
 
-    /*
-    printf("Preamble[0]: %p\n", *buf.head.preamble);
-    printf("Preamble[1]: %p\n", buf.head.preamble[1]);
-    printf("Preamble[2]: %p\n", buf.head.preamble[2]);
-    printf("Preamble[3]: %p\n", buf.head.preamble[3]);
-    printf("Preamble[4]: %p\n", buf.head.preamble[4]);
-    printf("Preamble[5]: %p\n", buf.head.preamble[5]);
-    printf("Preamble[6]: %p\n", buf.head.preamble[6]);
-    printf("Preamble[7]: %p\n", buf.head.preamble[7]);
-    printf("Preamble[8]: %p\n", buf.head.preamble[8]);
-    printf("Preamble[9]: %p\n", buf.head.preamble[9]);
-    printf("Key[0]: %p\n", buf.head.key[0]);
-    printf("Key[1]: %p\n", buf.head.key[1]);
-    printf("Key[2]: %p\n", buf.head.key[2]);
-    printf("Key[3]: %p\n", buf.head.key[3]);
-    printf("PI: %p\n", buf.head.PI);
-    printf("Checksum[0]: %p\n", buf.head.checksum[0]);
-    printf("Checksum[1]: %p\n", buf.head.checksum[1]);
-
-	*/
 
     // Emulate transmission time
     //sleep((len*8)/19200);
-    sleep(2);
+    sleep(1);
 
     // Prepare address structure
 	sa.sin_family = AF_INET;
@@ -168,11 +138,6 @@ int radio_recv(int* src, char* data, int to_ms) {
     	return ERR_FAILED;
     }
 
-    /*
-    receivedChecksum = buf.head.checksum[1];
-    receivedChecksum = receivedChecksum << 8;
-    receivedChecksum |= buf.head.checksum[0];
-    */
     receivedChecksum[0] = buf.head.checksum[0];
     receivedChecksum[1] = buf.head.checksum[1];
     short p = checkSum(buf.head.str);
@@ -181,58 +146,17 @@ int radio_recv(int* src, char* data, int to_ms) {
     calculatedChecksum[1] = p;
 
 
-    /*
-    if (buf.head.tag == DATA) {
-    	printf("Received checksum[0]: %p\n", buf.head.checksum[0]);
-    	printf("Received checksum[1]: %p\n", buf.head.checksum[1]);
-    	printf("calculatedChecksum[0]: %p\n", calculatedChecksum[0]);
-    	printf("calculatedChecksum[1]: %p\n", calculatedChecksum[1]);
-    }
-
-    /*
-    for (int i = 0; i < 20; i++) {
-    	printf("buf.str[%d]: %d\n", i, buf.head.str[i]);
-    }
-    */
-    /*
-
-    */
-
-    if(buf.head.tag == DATA) {
+    if(buf.head.tag == CHECK) {
     	if (calculatedChecksum[0] != receivedChecksum[0] || calculatedChecksum[1] != receivedChecksum[1]) {
     	    printf("Packet integrety lost\n");
     	    return ERR_CORR;
     	}
     }
 
-
-    //check if checksum works
-
-    // Set source from address structure
-
-    /*
-    printf("Preamble[0]: %p\n", *buf.head.preamble);
-    printf("Preamble[1]: %p\n", buf.head.preamble[1]);
-    printf("Preamble[2]: %p\n", buf.head.preamble[2]);
-    printf("Preamble[3]: %p\n", buf.head.preamble[3]);
-    printf("Preamble[4]: %p\n", buf.head.preamble[4]);
-    printf("Preamble[5]: %p\n", buf.head.preamble[5]);
-    printf("Preamble[6]: %p\n", buf.head.preamble[6]);
-    printf("Preamble[7]: %p\n", buf.head.preamble[7]);
-    printf("Preamble[8]: %p\n", buf.head.preamble[8]);
-    printf("Preamble[9]: %p\n", buf.head.preamble[9]);
-    printf("Key[0]: %p\n", buf.head.key[0]);
-    printf("Key[1]: %p\n", buf.head.key[1]);
-    printf("Key[2]: %p\n", buf.head.key[2]);
-    printf("Key[3]: %p\n", buf.head.key[3]);
-    printf("PI: %p\n", buf.head.PI);
-    printf("Checksum[0]: %p\n", buf.head.checksum[0]);
-    printf("Checksum[1]: %p\n", buf.head.checksum[1]);
-    printf("First letter: %c\n", buf.head.str[0]);
-    */
     data[0] = buf.head.tag;
     memcpy(data+sizeof(char), buf.head.str, DATA_SIZE);
 
+    // Set source from address structure
     *src = ntohs(sa.sin_port);
 
     return len;
