@@ -18,16 +18,11 @@ typedef struct {
 	char str[0];
 } data_pdu_t;
 
-typedef struct {
-	tag_t type;
-} ack_pdu_t;
-
 typedef union {
 	char raw[DATA_SIZE];
 
 	tag_t pdu_type;
 	data_pdu_t data;
-	ack_pdu_t ack;
 } pdu_frame_t;
 
 
@@ -47,7 +42,6 @@ int ecg_send(int  dst, char* packet, int len, int to_ms) {
 		len -= DATA_SIZE - 1;
 	}
 
-	printf("vismig: %d\n",len);
 	memset(singlePacket, 0, DATA_SIZE -1);
 	memcpy(singlePacket,packet+counter,len);
 	err += ecg_sendPacket(dst,singlePacket, len , to_ms);
@@ -74,12 +68,29 @@ int ecg_sendPacket(int  dst, char* packet, int len, int to_ms) {
 		printf("radio_send failed with: %d\n", err);
 	}
 
-	if ((errs = radio_recv(&src, buf.raw, to_ms)) >= ERR_OK){
-		if (buf.ack.type.tag == ACK) {
-			printf("ACK\n");
-		}
-	}
+	while(1) {
 
+		errs = radio_recv(&src, buf.raw, to_ms);
+		if (errs >= ERR_OK) {
+
+			if (buf.data.type.tag != ACK) {
+			printf("received a non-ACK packet with length %d\n",errs);
+			continue;
+			}
+
+			printf("Acknowledgement received from %d\n",dst);
+			break;
+		}
+
+		if(errs != ERR_TIMEOUT){
+		printf("Unknown error occured when receiving acknowledgement\n");
+		return errs;
+		}
+
+		printf("Acknowledgement timed out\n");
+		return errs;
+
+	}
 	return err;
 }
 
@@ -97,7 +108,7 @@ int ecg_recv(int* src, char* packet, int len, int to_ms) {
 		printf("DATA RECEIVED\n");
 		memcpy(packet, buf.data.str, DATA_SIZE -1);
 
-		buf.ack.type.tag = ACK;
+		buf.data.type.tag = ACK;
 
 		if ((errs = radio_send(*src, buf.raw, DATA_SIZE)) != ERR_OK) {
 				printf("Our radio_send failed with: %d\n", errs);

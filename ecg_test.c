@@ -4,7 +4,7 @@
  * Simple test of ECG protocol
  * Parameters:
  *   -r     Runs as receiver (default)
- *   -s     Runs as sender
+ *   -s     Runs as sender 
  *   -ra p  Set recevier address to p (port)
  *   -sa p  Set sender address to p (port)
  */

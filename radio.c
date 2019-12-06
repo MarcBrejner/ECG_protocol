@@ -177,11 +177,12 @@ int radio_recv(int* src, char* data, int to_ms) {
     printf("Calculated checksum: %p\n", calculatedChecksum);
     */
 
-
+    /*
     if (calculatedChecksum != receivedChecksum) {
     	printf("Packet integrety lost\n");
     	return ERR_CORR;
     }
+	*/
 
     //check if checksum works
 
