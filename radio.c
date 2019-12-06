@@ -65,13 +65,12 @@ int radio_send(int dst, char* data, int len) {
 	struct sockaddr_in sa;   // Structure to hold destination address
 	frame_packet_t buf;
 
-	int slen;
     // Check that port and len are valid
     if (dst < 0 || dst > 65535 || len < 0 || len > DATA_SIZE) {
     	return ERR_INVAL;
     }
 
-
+    // Initialize the header and clean the packet
     memset(buf.head.str, 0, sizeof(char)*len);
     memset(buf.head.preamble, 170, sizeof(char)*10);
     memset(buf.head.key, 199, sizeof(char)*4);
@@ -93,8 +92,8 @@ int radio_send(int dst, char* data, int len) {
 
 
     // Emulate transmission time
-    //sleep(((HEADER_SIZE+len)*8)/19200);
-    sleep(10);
+    sleep(((HEADER_SIZE+len)*8)/19200);
+    //sleep(1);
 
     // Prepare address structure
 	sa.sin_family = AF_INET;

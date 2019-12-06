@@ -44,6 +44,8 @@ int ecg_send(int  dst, char* packet, int len, int to_ms) {
 
 	//Clear singlePacket and send START
 	memset(singlePacket, 0, DATA_SIZE -1);
+	singlePacket[1] = (char) (len % 256);
+	singlePacket[2] = (char) (len / 256);
 	ecg_sendPacket(dst, singlePacket, 1, alarm_rem(&timer1) , START);
 
 	//While the remaining packets total length is bigger than the size of a single packet
@@ -66,7 +68,6 @@ int ecg_send(int  dst, char* packet, int len, int to_ms) {
 
 
 int ecg_sendPacket(int  dst, char* packet, int len, int to_ms, char tag) {
-
 	pdu_frame_t buf;
 	int err, src, errs;
 
@@ -99,15 +100,15 @@ int ecg_sendPacket(int  dst, char* packet, int len, int to_ms, char tag) {
 			}
 			if(buf.data.type.tag == END){
 				printf("END-acknowledgement received from %d\n",dst);
-				break;
+				exit(0);
 			}
 			printf("Acknowledgement received from %d\n",dst);
 			break;
 		}
 
 		if(errs != ERR_TIMEOUT){
-		printf("Unknown error occured when receiving acknowledgement\n");
-		return errs;
+			printf("Unknown error occured when receiving acknowledgement\n");
+			return errs;
 		}
 
 		printf("Acknowledgement timed out\n");
@@ -119,46 +120,62 @@ int ecg_sendPacket(int  dst, char* packet, int len, int to_ms, char tag) {
 
 
 int ecg_recv(int* src, char* packet, int len, int to_ms) {
-
-	int err,errs;
+	int err,errs, recLen;
 	pdu_frame_t buf;
 
 	memset(buf.raw, 0, DATA_SIZE);
 
 	err = radio_recv(src, buf.raw, to_ms);
-	if(buf.data.type.tag == START){
-		rcvCounter = 0;
-		//receiving = 1;
-
-		buf.data.type.tag = START;
-		if ((errs = radio_send(*src, buf.raw, DATA_SIZE)) != ERR_OK) {
-				printf("Our radio_send failed with: %d\n", errs);
-		}
-
-	} else if (buf.data.type.tag == DATA) {
-
-		printf("DATA RECEIVED\n");
-		memcpy(packet+rcvCounter, buf.data.str, DATA_SIZE -1);
-
-		buf.data.type.tag = ACK;
-
-		if ((errs = radio_send(*src, buf.raw, DATA_SIZE)) != ERR_OK) {
-				printf("Our radio_send failed with: %d\n", errs);
-		}
-	} else if (buf.data.type.tag == END) {
-
-		rcvCounter = 0;
-		buf.data.type.tag = END;
-
-		if ((errs = radio_send(*src, buf.raw, DATA_SIZE)) != ERR_OK) {
-					printf("Our radio_send failed with: %d\n", errs);
-		}
+	/*
+	for (int i = 0; i < 10; i++) {
+		printf("Buf.raw[%d]: %c\n", i, buf.raw[i]);
 	}
+	*/
 
+	if (err >= ERR_OK) {
+		if(buf.data.type.tag == START){
+			unsigned char tempA, tempB;
+			tempA = buf.data.str[1];
+			tempB = buf.data.str[2];
+			recLen = (int) tempA + (int) tempB*256;
+			rcvCounter = 0;
+			//receiving = 1;
+			if (recLen > MAX_SEND_SIZE) {
+				printf("Failed with packet size too large");
+				exit(0);
+			}
+			buf.data.type.tag = START;
+			if ((errs = radio_send(*src, buf.raw, DATA_SIZE)) != ERR_OK) {
+				printf("Our radio_send failed with: %d\n", errs);
+			}
 
+		} else if (buf.data.type.tag == DATA) {
+			printf("DATA RECEIVED\n");
+			memcpy(packet+rcvCounter, buf.data.str, DATA_SIZE -1);
+
+			buf.data.type.tag = ACK;
+
+			if ((errs = radio_send(*src, buf.raw, DATA_SIZE)) != ERR_OK) {
+				printf("Our radio_send failed with: %d\n", errs);
+			}
+		} else if (buf.data.type.tag == END) {
+			rcvCounter = 0;
+			buf.data.type.tag = END;
+
+			if ((errs = radio_send(*src, buf.raw, DATA_SIZE)) != ERR_OK) {
+				printf("Our radio_send failed with: %d\n", errs);
+			}
+			exit(0);
+		}
+
+	} else {
+		printf("Receiver timeout\n");
+		exit(0);
+	}
 
 	err = strlen(buf.data.str);
 	rcvCounter += err;
+	printf("ECG_done\n");
 	return rcvCounter;
 }
 

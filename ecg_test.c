@@ -4,7 +4,7 @@
  * Simple test of ECG protocol
  * Parameters:
  *   -r     Runs as receiver (default)
- *   -s     Runs as sender 
+ *   -s     Runs as sender
  *   -ra p  Set recevier address to p (port)
  *   -sa p  Set sender address to p (port)
  */
@@ -88,7 +88,7 @@ int sender() {
 int receiver() {
     int err, len, source;
 
-    char buf[RECV_BUF_SIZE];
+    char buf[4096];
 
     printf("Acting as receiver with address %d\n", rcv_addr);
 
@@ -96,8 +96,6 @@ int receiver() {
         printf("Protocol could not be initialized: %d\n", err);
         return 1;
     }
-
-    printf("Protocol init initialized\n");
 
     while (1) {
 
