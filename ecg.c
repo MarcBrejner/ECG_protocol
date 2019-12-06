@@ -144,6 +144,7 @@ int ecg_recv(int* src, char* packet, int len, int to_ms) {
 				printf("Failed with packet size too large");
 				exit(0);
 			}
+
 			buf.data.type.tag = START;
 			if ((errs = radio_send(*src, buf.raw, DATA_SIZE)) != ERR_OK) {
 				printf("Our radio_send failed with: %d\n", errs);
@@ -165,7 +166,7 @@ int ecg_recv(int* src, char* packet, int len, int to_ms) {
 			if ((errs = radio_send(*src, buf.raw, DATA_SIZE)) != ERR_OK) {
 				printf("Our radio_send failed with: %d\n", errs);
 			}
-			exit(0);
+			return ERR_TIMEOUT;
 		}
 
 	} else {
@@ -175,7 +176,6 @@ int ecg_recv(int* src, char* packet, int len, int to_ms) {
 
 	err = strlen(buf.data.str);
 	rcvCounter += err;
-	printf("ECG_done\n");
 	return rcvCounter;
 }
 

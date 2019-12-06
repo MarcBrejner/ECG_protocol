@@ -16,7 +16,7 @@
 #include <string.h>
 #include <stdlib.h>
 
-#define SEND_TIMEOUT_SEC        5
+#define SEND_TIMEOUT_SEC       	5
 #define RECV_TIMEOUT_SEC       10
 #define SEND_BUF_SIZE        1024
 #define RECV_BUF_SIZE         256
@@ -43,78 +43,73 @@ void read_args(int argc, char * argv[]) {
     }
 }
 
-int sender() {
-    int err, last;
 
-    char msg[SEND_BUF_SIZE];
+int sendFile(){
+	FILE *file = fopen("Rpeak.txt","r");
+	char    *buffer;
 
-    printf("Acting as sender with address %d sending to %d\n", snd_addr, rcv_addr);
+	int err;
 
-    if ( (err=ecg_init(snd_addr)) != ERR_OK) {
-        printf("Protocol could not be initialized: %d\n", err);
-        return 1;
-    }
+	fseek(file, 0, SEEK_END);
+	int length = ftell(file);
 
-    printf("Protocol node initialized\n");
+	fseek(file, 0, SEEK_SET);
+	buffer = (char*)calloc(length, sizeof(char));
 
-    while (1) {
+	fread(buffer, sizeof(char), length, file);
 
-        // Get next message from console
-        printf("Enter message: ");
-        fgets(msg, SEND_BUF_SIZE, stdin);
-        last = strlen(msg) - 1;
-        if (msg[last] == '\n') { msg[last] = '\0'; }  // Drop ending newline
+	fclose(file);
 
-        // Send it reliably
-        err = ecg_send(rcv_addr, msg, strlen(msg), SEND_TIMEOUT_SEC * 1000);
+	printf("Acting as sender with address %d\n", snd_addr);
 
-        if (err != ERR_OK && err != ERR_TIMEOUT) {
-            printf("ecg_send failed with %d\n", err);
-            continue;
-        }
+	if ((err=ecg_init(snd_addr)) != ERR_OK) {
+		printf("Protocol could not be initialized: %d\n", err);
+	    return 1;
+	}
 
-        if (err == ERR_TIMEOUT) {
-            printf("... timed out\n");
-            continue;
-        }
+	printf("Protocol init initialized\n");
+	err = ecg_send(rcv_addr, buffer, strlen(buffer), SEND_TIMEOUT_SEC * 1000);
+	/*
+	while (1) {
 
-        printf("Reliably sent: %s\n", msg);
-    }
+    if (err == ERR_TIMEOUT) {
+           printf("ecg_recv timed out\n");
+           continue;
+       }
+       printf("ecg_recv failed with %d\n", err);
+       continue;
+	}
 
-    return 0;
+		buffer[err] = '\0';
+   		printf("Received %d bytes from address %d: %s\n", len, source, buf);
+	}
+	*/
+
+	free(buffer);
+	return 1;
 }
 
+int writeFile(){
+	FILE *file = fopen("netFile.txt","w");
+	char    *buffer = malloc(2000);
+	int err, source;
 
-int receiver() {
-    int err, len, source;
+	printf("Acting as receiver with address %d\n", rcv_addr);
 
-    char buf[4096];
+	if ((err=ecg_init(rcv_addr)) != ERR_OK) {
+		printf("Protocol could not be initialized: %d\n", err);
+		return 1;
+	}
 
-    printf("Acting as receiver with address %d\n", rcv_addr);
+	 printf("Protocol init initialized\n");
 
-    if ( (err=ecg_init(rcv_addr)) != ERR_OK) {
-        printf("Protocol could not be initialized: %d\n", err);
-        return 1;
-    }
+	 while((err = ecg_recv(&source, buffer, sizeof(buffer), RECV_TIMEOUT_SEC * 1000)) != -3){}
 
-    while (1) {
+	fputs(buffer,file);
 
-        if ( (len=ecg_recv(&source, buf, sizeof(buf), RECV_TIMEOUT_SEC * 1000)) < 0) {
-            if (len == ERR_TIMEOUT) {
-                printf("ecg_recv timed out\n");
-                continue;
-            }
-            printf("ecg_recv failed with %d\n", len);
-            continue;
-        }
-
-        buf[len] = '\0';
-        printf("Received %d bytes from address %d: %s\n", len, source, buf);
-    }
-
-    printf("Receive loop ended!\n");
-    return 1;
-
+	fclose(file);
+	free(buffer);
+	return 1;
 }
 
 
@@ -122,6 +117,6 @@ int main(int argc, char * argv[]) {
 
     read_args(argc, argv);
 
-    return is_sender ? sender() :  receiver();
+    return is_sender ? sendFile() :  writeFile();
 
 }
