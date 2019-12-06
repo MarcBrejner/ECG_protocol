@@ -21,6 +21,7 @@ typedef union {
 	data_pdu_t data;
 } pdu_frame_t;
 
+char localArray[MAX_SEND_SIZE];
 
 int ecg_init(int addr) {
 	return radio_init(addr);
@@ -37,21 +38,11 @@ int ecg_send(int  dst, char* packet, int len, int to_ms) {
 
 	//Insert len in singlePacket
 	printf("in Length %d\n",len);
-	singlePacket[1] = (unsigned char) (len % 256);
-	singlePacket[2] = (unsigned char) (len / 256);
+	singlePacket[1] = (char) (len % 256);
+	singlePacket[2] = (char) (len / 256);
 
 	//Send start-packet that indicates a transfer is about to start always 3 bytes (tag and 2 bytes for length)
 	ecg_sendPacket(dst, singlePacket, DATA_SIZE-1, to_ms, START);
-
-	//Wait for acknowledgement
-	/*
-	while(1){
-		radio_recv();
-		if(blabla){
-			break;
-		}
-	}
-	*/
 
 	//While the remaining packets total length is bigger than the size of a single packet
 	while(len >= DATA_SIZE -1){
@@ -92,11 +83,19 @@ int ecg_sendPacket(int  dst, char* packet, int len, int to_ms, char tag) {
 		errs = radio_recv(&src, buf.raw, to_ms);
 		if (errs >= ERR_OK) {
 
-			if (buf.data.type.tag != ACK) {
+			if (buf.data.type.tag != ACK && buf.data.type.tag != END && buf.data.type.tag != START) {
 			printf("received a non-ACK packet with length %d\n",errs);
 			continue;
 			}
 
+			if(buf.data.type.tag == START){
+				printf("START-Acknowledgement received from %d\n",dst);
+				break;
+			}
+			if(buf.data.type.tag == END){
+				printf("END-acknowledgement received from %d\n",dst);
+				break;
+			}
 			printf("Acknowledgement received from %d\n",dst);
 			break;
 		}
@@ -115,61 +114,82 @@ int ecg_sendPacket(int  dst, char* packet, int len, int to_ms, char tag) {
 
 
 int ecg_recv(int* src, char* packet, int len, int to_ms) {
-	int err, errs;
+	int err=0, errs, recLen,ogLen;
+	int counter = 0;
+
+
 	pdu_frame_t buf;
 
 	//Receive packet
-	err = radio_recv(src , buf.raw , to_ms);
+	memset(buf.raw,0,DATA_SIZE);
+	radio_recv(src , buf.raw , to_ms);
 
 	//Check if start of transfer packet
 	if(buf.data.type.tag == START){
 
 		//Set total length of data to be received
-		int recLen;
-		recLen = (int) buf.data.str[1] + (int) buf.data.str[2]*256;
+
+		unsigned char tempA, tempB;
+		tempA = buf.data.str[1];
+		tempB = buf.data.str[2];
+
+		recLen = (int) tempA + (int) tempB*256;
+		ogLen = recLen;
+
 		printf("recLen %d\n",recLen);
 
 		//Check if data is too big to receive
-		if (recLen > 4096){
+		if (recLen > MAX_SEND_SIZE){
 			return ERR_INVAL;
 		}
 
 		//If OKAY, then send back acknowledgement
 		memset(buf.raw,0,DATA_SIZE);
-		buf.data.type.tag = ACK;
+		buf.data.type.tag = START;
 		if ((errs = radio_send(*src, buf.raw, 1)) != ERR_OK) {
 				printf("recvACK failed with: %d\n", errs);
 		}
 	}
 
+	while(recLen > DATA_SIZE - 1){
 
-	return err;
-}
+		memset(buf.raw, 0, DATA_SIZE);
+		err += radio_recv(src, buf.raw, to_ms);
 
+		if(buf.data.type.tag == DATA){
 
-int ecg_recvPacket(int* src, char* packet, int len, int to_ms) {
-	int err,errs;
-	pdu_frame_t buf;
+			printf("DATA RECEIVED\n");
 
-	memset(buf.raw, 0, DATA_SIZE);
+			memcpy(localArray+counter,buf.data.str,DATA_SIZE -1);
+			counter += DATA_SIZE - 1;
+			recLen -= DATA_SIZE -1;
 
-	err = radio_recv(src, buf.raw, to_ms);
+			memset(buf.raw,0,DATA_SIZE);
+			buf.data.type.tag = ACK;
+			if ((errs = radio_send(*src, buf.raw, 1)) != ERR_OK) {
+					printf("whileACK failed with: %d\n", errs);
+			}
 
+		}
 
+	}
 
-	if (buf.data.type.tag == DATA) {
+	memset(buf.raw, 0, DATA_SIZE -1);
+	err += radio_recv(src,buf.raw,to_ms);
 
+	if(buf.data.type.tag == DATA){
 		printf("DATA RECEIVED\n");
-		memcpy(packet, buf.data.str, DATA_SIZE -1);
+		memcpy(localArray+counter,buf.data.str,recLen);
+		memset(buf.raw,0,DATA_SIZE);
 
-		buf.data.type.tag = ACK;
-
-		if ((errs = radio_send(*src, buf.raw, DATA_SIZE)) != ERR_OK) {
-				printf("Our radio_send failed with: %d\n", errs);
+		//send ACK
+		buf.data.type.tag = END;
+		if ((errs = radio_send(*src, buf.raw, 1)) != ERR_OK) {
+				printf("endACK failed with: %d\n", errs);
 		}
 	}
 
-	err = strlen(buf.data.str);
+	memcpy(packet,localArray,ogLen);
 
 	return err;
 }

@@ -94,7 +94,6 @@ int radio_send(int dst, char* data, int len) {
 
     // Emulate transmission time
     //sleep((len*8)/19200);
-    sleep(1);
 
     // Prepare address structure
 	sa.sin_family = AF_INET;
