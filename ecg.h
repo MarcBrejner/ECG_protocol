@@ -11,6 +11,7 @@
 #define ACK 1
 #define START 2
 #define END 3
+#define BUSY 4
 #define MAX_SEND_SIZE 4096
 
 #include "errors.h"

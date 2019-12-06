@@ -16,7 +16,7 @@
 #include <string.h>
 #include <stdlib.h>
 
-#define SEND_TIMEOUT_SEC       	5
+#define SEND_TIMEOUT_SEC        5
 #define RECV_TIMEOUT_SEC       10
 #define SEND_BUF_SIZE        1024
 #define RECV_BUF_SIZE         256
@@ -31,7 +31,9 @@ void read_args(int argc, char * argv[]) {
     for (i = 1; i < argc; i++) {
         if (strcmp(argv[i], "-r") == 0) { is_sender = 0;  continue; }
         if (strcmp(argv[i], "-s") == 0) { is_sender = 1;  continue; }
+
         if (strcmp(argv[i], "-sa") == 0 && i < argc - 1) {
+        	is_sender = 1;
             snd_addr = atoi(argv[++i]);
             continue;
         }
@@ -69,21 +71,6 @@ int sendFile(){
 
 	printf("Protocol init initialized\n");
 	err = ecg_send(rcv_addr, buffer, strlen(buffer), SEND_TIMEOUT_SEC * 1000);
-	/*
-	while (1) {
-
-    if (err == ERR_TIMEOUT) {
-           printf("ecg_recv timed out\n");
-           continue;
-       }
-       printf("ecg_recv failed with %d\n", err);
-       continue;
-	}
-
-		buffer[err] = '\0';
-   		printf("Received %d bytes from address %d: %s\n", len, source, buf);
-	}
-	*/
 
 	free(buffer);
 	return 1;

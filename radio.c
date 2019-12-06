@@ -94,6 +94,7 @@ int radio_send(int dst, char* data, int len) {
     // Emulate transmission time
     sleep(((HEADER_SIZE+len)*8)/19200);
 
+
     // Prepare address structure
 	sa.sin_family = AF_INET;
     sa.sin_port = htons(dst);
@@ -103,12 +104,7 @@ int radio_send(int dst, char* data, int len) {
     if ( sendto(sock, buf.raw, HEADER_SIZE + len, 0 , (struct sockaddr *) &sa, sizeof(sa)) < 0){
        	return ERR_FAILED;
     }
-    /*
-    // Check if fully sent
-    if ( recvfrom(sock, (char *)buffer , FRAME_PAYLOAD_SIZE, 0 , (struct sockaddr *) &sa, &slen) < -1){
-      	return ERR_FAILED;
-    }
-    */
+
     return ERR_OK;
 }
 

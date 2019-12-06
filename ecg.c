@@ -28,7 +28,7 @@ int ecg_init(int addr) {
 }
 
 int rcvCounter=0;
-//int receiving;
+int receiving;
 
 int ecg_send(int  dst, char* packet, int len, int to_ms) {
 
@@ -89,7 +89,7 @@ int ecg_sendPacket(int  dst, char* packet, int len, int to_ms, char tag) {
 		errs = radio_recv(&src, buf.raw, to_ms);
 		if (errs >= ERR_OK) {
 
-			if (buf.data.type.tag != ACK && buf.data.type.tag != END && buf.data.type.tag != START) {
+			if (buf.data.type.tag != ACK && buf.data.type.tag != END && buf.data.type.tag != START && buf.data.type.tag != BUSY) {
 			printf("received a non-ACK packet with length %d\n",errs);
 			continue;
 			}
@@ -100,6 +100,10 @@ int ecg_sendPacket(int  dst, char* packet, int len, int to_ms, char tag) {
 			}
 			if(buf.data.type.tag == END){
 				printf("END-acknowledgement received from %d\n",dst);
+				exit(0);
+			}
+			if(buf.data.type.tag == BUSY){
+				printf("The device with address %d is currently busy\n",dst);
 				exit(0);
 			}
 			printf("Acknowledgement received from %d\n",dst);
@@ -121,6 +125,7 @@ int ecg_sendPacket(int  dst, char* packet, int len, int to_ms, char tag) {
 
 int ecg_recv(int* src, char* packet, int len, int to_ms) {
 	int err,errs, recLen;
+	int recSrc;
 	pdu_frame_t buf;
 
 	memset(buf.raw, 0, DATA_SIZE);
@@ -138,8 +143,17 @@ int ecg_recv(int* src, char* packet, int len, int to_ms) {
 			tempA = buf.data.str[1];
 			tempB = buf.data.str[2];
 			recLen = (int) tempA + (int) tempB*256;
+			if(receiving == 1){
+				buf.data.type.tag = BUSY;
+				if ((errs = radio_send(*src, buf.raw, DATA_SIZE)) != ERR_OK) {
+						printf("Our radio_send failed with: %d\n", errs);
+					}
+				return ERR_FAILED;
+			}
+
 			rcvCounter = 0;
-			//receiving = 1;
+			receiving = 1;
+
 			if (recLen > MAX_SEND_SIZE) {
 				printf("Failed with packet size too large");
 				exit(0);
@@ -161,6 +175,7 @@ int ecg_recv(int* src, char* packet, int len, int to_ms) {
 			}
 		} else if (buf.data.type.tag == END) {
 			rcvCounter = 0;
+			receiving = 0;
 			buf.data.type.tag = END;
 
 			if ((errs = radio_send(*src, buf.raw, DATA_SIZE)) != ERR_OK) {
