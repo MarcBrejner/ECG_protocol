@@ -9,8 +9,12 @@
 
 #include "errors.h"
 
+// Tags
+#define DATA 0
+#define ACK 1
+
 #define FRAME_PAYLOAD_SIZE 72
-#define HEADER_SIZE 17
+#define HEADER_SIZE 18
 #define DATA_SIZE FRAME_PAYLOAD_SIZE - HEADER_SIZE
 
 int radio_init(int addr);

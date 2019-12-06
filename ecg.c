@@ -7,10 +7,6 @@
 #include <stdio.h>
 #include <string.h>
 
-// Tags
-#define DATA 0
-#define ACK 1
-
 typedef struct {char tag; } tag_t;
 
 typedef struct {
